@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { LoginService } from './auth/services/login.service';
+import { JQueryService } from './services/jquery.service';
 
 @Component({
   selector: 'app-root',
@@ -9,15 +10,23 @@ import { LoginService } from './auth/services/login.service';
 export class AppComponent implements OnInit {
   isAuthenticated = false;
 
-  constructor(private loginService: LoginService) {}
+  constructor(
+    // private loginService: LoginService,
+    private jqueryService: JQueryService
+  ) {}
 
   ngOnInit() {
-    this.loginService.isAuthenticated().subscribe(isAuth => {
-      this.isAuthenticated = isAuth;
+
+  }
+
+  initializeNavbarToggler() {
+    // Use jQuery to handle navbar toggle on mobile
+    this.jqueryService.$('.navbar-toggler').on('click', () => {
+      this.jqueryService.$('.navbar-collapse').toggleClass('show');
     });
   }
 
-  logout() {
-    this.loginService.logout();
-  }
+    // logout() {
+    //   this.loginService.logout();
+    // }
 }

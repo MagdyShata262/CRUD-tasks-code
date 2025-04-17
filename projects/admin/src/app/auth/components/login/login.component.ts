@@ -20,17 +20,13 @@ export class LoginComponent implements OnInit {
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]]
+      password: ['', [Validators.required, Validators.minLength(6)]],
+      role: ['admin']
     });
   }
 
   ngOnInit(): void {
-    // If already logged in, redirect to tasks
-    this.loginService.isAuthenticated().subscribe(isAuth => {
-      if (isAuth) {
-        this.router.navigate(['/tasks']);
-      }
-    });
+
   }
 
   onSubmit(): void {
@@ -40,22 +36,21 @@ export class LoginComponent implements OnInit {
 
     this.loading = true;
     this.errorMessage = '';
+    const payload = this.loginForm.value; // Extract form values
 
-    const { email, password } = this.loginForm.value;
-
-    this.loginService.login(email, password).subscribe(
-      response => {
-        this.loading = false;
-        if (response.error) {
-          this.errorMessage = response.error;
-        } else {
-          this.router.navigate(['/tasks']);
-        }
+    this.loginService.login(payload).subscribe({
+      next: (response) => {
+        console.log('Login successful:', response);
+        localStorage.setItem('token', response.token);
+        this.router.navigate(['/tasks']);
       },
-      error => {
+      error: (error) => {
+        this.errorMessage = error.error.message;
         this.loading = false;
-        this.errorMessage = 'An error occurred. Please try again.';
+      },
+      complete: () => {
+        this.loading = false;
       }
-    );
+    });
   }
 }

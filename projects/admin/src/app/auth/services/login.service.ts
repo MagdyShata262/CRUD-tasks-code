@@ -1,48 +1,47 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, of } from 'rxjs';
+import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { map, tap } from 'rxjs/operators';
+import { catchError, map, tap } from 'rxjs/operators';
 
+export interface LoginRequest {
+  email: string;
+  password: string;
+  role: string;
+}
 @Injectable({
   providedIn: 'root'
 })
 export class LoginService {
-  private isAuthenticatedSubject = new BehaviorSubject<boolean>(this.hasToken());
+
+  private apiUrl = 'http://localhost:8080/auth/login'; // API endpoint
+
+
+
 
   constructor(private router: Router, private http: HttpClient) { }
 
-  login(email: string, password: string): Observable<any> {
-    // In a real app, this would make an HTTP request to authenticate
-    // For demo purposes, we're just checking against hardcoded values
-    if (email === 'admin@example.com' && password === 'password') {
-      const mockResponse = {
-        user: { id: 1, email, role: 'admin' },
-        token: 'mock-jwt-token'
-      };
 
-      localStorage.setItem('token', mockResponse.token);
-      localStorage.setItem('user', JSON.stringify(mockResponse.user));
-      this.isAuthenticatedSubject.next(true);
 
-      return of(mockResponse);
-    }
-
-    return of({ error: 'Invalid credentials' });
+  login(payload: LoginRequest): Observable<any> {
+    return this.http.post(this.apiUrl, payload).pipe(
+      map((response) => {
+        // Handle successful response
+        console.log('Login successful:', response);
+        return response;
+      }),
+      catchError((error) => {
+        // Handle errors (e.g., invalid credentials)
+        console.error('Login failed:', error);
+        return throwError(() => new Error(error.error?.message || 'Login failed'));
+      })
+    );
   }
 
-  logout(): void {
+  logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    this.isAuthenticatedSubject.next(false);
     this.router.navigate(['/login']);
   }
 
-  isAuthenticated(): Observable<boolean> {
-    return this.isAuthenticatedSubject.asObservable();
-  }
-
-  private hasToken(): boolean {
-    return !!localStorage.getItem('token');
-  }
 }

@@ -8,6 +8,7 @@ import { MaterialModule } from './material/material.module';
 import { RouterModule } from '@angular/router';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
+import { JQueryService } from './services/jquery.service';
 
 @NgModule({
   declarations: [
@@ -20,10 +21,10 @@ import { HttpClientModule } from '@angular/common/http';
     ReactiveFormsModule,
     HttpClientModule,
     AppRoutingModule,
-    
+
     BrowserAnimationsModule
   ],
-  providers: [],
+  providers: [JQueryService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

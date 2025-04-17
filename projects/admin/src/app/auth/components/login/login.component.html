@@ -1,44 +1,65 @@
 <div class="login d-flex justify-content-center align-items-center m-auto">
-
-    <div class="row">
-        <div class="col-md-6 p-0">
-            <div class="overlay"></div>
-            <img src="../../../../assets/desola-lanre-ologun-zYgV-NGZtlA-unsplash.jpg" alt="">
-        </div>
-        <div class="col-md-6">
-         <div class="h-100 d-flex align-items-center justify-content-center w-100">
-            <div class="box w-75">
-                <h2>Login </h2>
-
-                <div *ngIf="errorMessage" class="alert alert-danger">
-                    {{ errorMessage }}
-                </div>
-
-                <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-                    <mat-form-field appearance="outline" class="w-100">
-                        <mat-label>Email</mat-label>
-                        <input matInput formControlName="email" placeholder="email">
-                        <mat-error *ngIf="loginForm.get('email')?.hasError('required')">Email is required</mat-error>
-                        <mat-error *ngIf="loginForm.get('email')?.hasError('email')">Please enter a valid email</mat-error>
-                    </mat-form-field>
-                    <mat-form-field appearance="outline" class="w-100">
-                        <mat-label>Password</mat-label>
-                        <input matInput type="password" formControlName="password" placeholder="password">
-                        <mat-error *ngIf="loginForm.get('password')?.hasError('required')">Password is required</mat-error>
-                        <mat-error *ngIf="loginForm.get('password')?.hasError('minlength')">Password must be at least 6 characters</mat-error>
-                    </mat-form-field>
-                    <div class="mt-2 text-center text-muted">
-                        <small>Demo credentials: admin&#64;example.com / password</small>
-                    </div>
-                </form>
-                <div class="d-flex justify-content-center mt-3">
-                    <button [disabled]="loginForm.invalid || loading" (click)="onSubmit()" mat-raised-button color="warn">
-                        <span *ngIf="loading">Loading...</span>
-                        <span *ngIf="!loading">Login</span>
-                    </button>
-                </div>
-            </div>
-         </div>
-        </div>
+  <div class="row">
+    <!-- Image Section -->
+    <div class="col-md-6 p-0">
+      <div class="overlay"></div>
+      <img src="../../../../assets/desola-lanre-ologun-zYgV-NGZtlA-unsplash.jpg" alt="Login Background"
+        class="w-100 h-100" />
     </div>
+
+    <!-- Login Form Section -->
+    <div class="col-md-6">
+      <div class="h-100 d-flex align-items-center justify-content-center w-100">
+        <div class="box w-75">
+          <h2 class="text-center mb-4">Login</h2>
+
+          <!-- Error Message -->
+          <div *ngIf="errorMessage" class="alert alert-danger">
+            {{ errorMessage }}
+          </div>
+
+          <!-- Login Form -->
+          <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+            <!-- Email Field -->
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Email</mat-label>
+              <input matInput formControlName="email" placeholder="Email" />
+              <mat-error *ngIf="loginForm.get('email')?.hasError('required')">
+                Email is required
+              </mat-error>
+              <mat-error *ngIf="loginForm.get('email')?.hasError('email')">
+                Please enter a valid email
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Password Field -->
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Password</mat-label>
+              <input matInput type="password" formControlName="password" placeholder="Password" />
+              <mat-error *ngIf="loginForm.get('password')?.hasError('required')">
+                Password is required
+              </mat-error>
+              <mat-error *ngIf="loginForm.get('password')?.hasError('minlength')">
+                Password must be at least 6 characters
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Hidden Role Field -->
+            <input type="hidden" formControlName="role" />
+
+            <div class="mt-2 text-center text-muted">
+              <small>Demo credentials: admin.com / password</small>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="d-flex justify-content-center mt-3">
+              <button (click)="onSubmit()" mat-raised-button color="warn">
+                Login
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

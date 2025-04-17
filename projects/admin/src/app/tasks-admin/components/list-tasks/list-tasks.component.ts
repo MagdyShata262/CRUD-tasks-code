@@ -63,7 +63,7 @@ export class ListTasksComponent implements OnInit {
       const dialogRef = this.dialog.open(AddTaskComponent, {
         width: '750px',
       });
-  
+
       dialogRef.afterClosed().subscribe(result => {
         if(result) {
           this.getAllTasks()
