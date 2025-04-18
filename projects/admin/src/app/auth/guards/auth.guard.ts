@@ -9,10 +9,25 @@ import { LoginService } from '../services/login.service';
 })
 export class AuthGuard implements CanActivate {
 
-  constructor(private loginService: LoginService, private router: Router) {}
-  canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
-    throw new Error('Method not implemented.');
-  }
+  constructor(private loginService: LoginService, private router: Router) { }
 
- 
+  canActivate(
+    route: ActivatedRouteSnapshot,
+    state: RouterStateSnapshot
+  ): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
+    return this.loginService.isAuthenticated().pipe(
+      take(1),
+      map(isAuthenticated => {
+        // If user is authenticated, allow access
+        if (isAuthenticated) {
+          return true;
+        }
+
+        // Otherwise, redirect to login page with the return url
+        return this.router.createUrlTree(['/login'], {
+          queryParams: { returnUrl: state.url }
+        });
+      })
+    );
+  }
 }
