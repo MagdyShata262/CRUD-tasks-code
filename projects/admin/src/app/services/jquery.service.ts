@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { environment } from '../../environments/environment';
 
 declare var $: any;
 
@@ -6,13 +7,16 @@ declare var $: any;
   providedIn: 'root'
 })
 export class JQueryService {
-  constructor() { }
+  constructor() {
+    // Initialize jQuery if needed
+  }
 
   /**
-   * Returns the jQuery object
+   * Returns the jQuery object or performs jQuery selector
+   * @param selector Optional CSS selector
    */
-  get $(): any {
-    return $;
+  $(selector?: string): any {
+    return selector ? $(selector) : $;
   }
 
   /**
@@ -23,5 +27,14 @@ export class JQueryService {
    */
   initPlugin(selector: any, plugin: string, options: any = {}): any {
     return $(selector)[plugin](options);
+  }
+
+  // Additional jQuery helper methods
+  fadeIn(selector: string, duration: number = 400): void {
+    $(selector).fadeIn(duration);
+  }
+
+  fadeOut(selector: string, duration: number = 400): void {
+    $(selector).fadeOut(duration);
   }
 }

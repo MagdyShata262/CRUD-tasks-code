@@ -1,24 +1,15 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { Task, TaskResponse, TaskCreate, TaskUpdate } from '../../models/task.model';
-
-// Define a specific response type for task creation
-export interface TaskCreateResponse {
-  success: boolean;
-  message: string;
-  task?: Task;
-  id?: number;
-}
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TasksService {
-  private baseUrl = 'http://localhost:8080/tasks'; // Base API endpoint
-  private apiUrl1 = this.baseUrl + '/all-tasks'; // API endpoint for all tasks
-  private apiUrl2 = this.baseUrl + '/add-task'; // API endpoint for add task
+  private baseUrl = environment.baseApi.replace('/tasks', '/tasks'); // Maintain the tasks endpoint
 
   constructor(private http: HttpClient) { }
 
@@ -26,10 +17,30 @@ export class TasksService {
    * Fetch all tasks from the API.
    * @returns An Observable containing the list of tasks.
    */
-  getAllTasks(): Observable<TaskResponse> {
-    return this.http.get<TaskResponse>(this.apiUrl1).pipe(
-      catchError(this.handleError) // Handle errors
-    );
+  getAllTasks(filters?: any): Observable<TaskResponse> {
+    let params = new HttpParams();
+
+    if (filters) {
+      if (filters.title) {
+        params = params.append('title', filters.title);
+      }
+      if (filters.userId) {
+        params = params.append('userId', filters.userId);
+      }
+      if (filters.status) {
+        params = params.append('status', filters.status);
+      }
+      if (filters.fromDate) {
+        const formattedFromDate = new Date(filters.fromDate).toISOString().split('T')[0];
+        params = params.append('fromDate', formattedFromDate);
+      }
+      if (filters.toDate) {
+        const formattedToDate = new Date(filters.toDate).toISOString().split('T')[0];
+        params = params.append('toDate', formattedToDate);
+      }
+    }
+
+    return this.http.get<TaskResponse>(`${this.baseUrl}/all-tasks`, { params });
   }
 
   /**
@@ -37,37 +48,137 @@ export class TasksService {
    * @param taskData The task data to be created
    * @returns An Observable containing the created task response
    */
-  createTask(taskData: TaskCreate): Observable<TaskCreateResponse> {
-    // For file uploads, we need to use FormData
-    const formData = new FormData();
+  createTask(formData: FormData): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/add-task`, formData);
+  }
 
-    // Append all task properties to the form data
-    formData.append('title', taskData.title);
-    formData.append('description', taskData.description);
+  /**
+   * Update an existing task
+   * @param taskId The ID of the task to be updated
+   * @param formData FormData object containing updated task information and file
+   * @returns An Observable containing the updated task response
+   */
 
-    // Handle deadline - could be string or Date
-    if (taskData.deadline) {
-      const deadlineValue = typeof taskData.deadline === 'string'
-        ? taskData.deadline
-        : this.formatDate(new Date(taskData.deadline));
-      formData.append('deadline', deadlineValue);
+  updateTask(taskId: string, formData: FormData): Observable<{ success: boolean; message: string }> {
+    // Validate inputs
+    if (!taskId?.trim()) {
+      const errorMsg = 'Task ID is required for updating';
+      console.error('Update task failed:', errorMsg);
+      return throwError(() => new Error(errorMsg));
     }
 
-    // Handle userId - ensure it's a string
-    if (taskData.userId) {
-      formData.append('userId', String(taskData.userId));
+    if (!this.isValidFormData(formData)) {
+      const errorMsg = 'Valid form data is required for updating';
+      console.error('Update task failed:', errorMsg);
+      return throwError(() => new Error(errorMsg));
     }
 
-    // Only append image if it exists
-    if (taskData.image) {
-      formData.append('image', taskData.image, taskData.image.name);
-    }
+    const url = `${this.baseUrl}/edit-task/${encodeURIComponent(taskId)}`;
+    console.log(`Attempting to update task with ID: ${taskId}`);
 
-    return this.http.post<TaskCreateResponse>(this.apiUrl2, formData).pipe(
-      tap(response => console.log('Task created:', response)),
-      catchError(this.handleError)
+    return this.http.put<{ success: boolean; message: string }>(url, formData).pipe(
+      tap((response) => {
+        console.log(`Task ${taskId} updated successfully:`, response.message);
+      }),
+      catchError((error: HttpErrorResponse) => {
+        const errorMsg = this.getErrorMessage(error, taskId);
+        console.error(`Failed to update task ${taskId}:`, errorMsg, error);
+        return throwError(() => new Error(errorMsg));
+      })
     );
   }
+
+  private isValidFormData(formData: FormData | null | undefined): boolean {
+    if (!formData) return false;
+
+    // Check if FormData has any entries
+    let hasEntries = false;
+    formData.forEach(() => { hasEntries = true; });
+    return hasEntries;
+
+    // Alternative check:
+    // return Array.from(formData.entries()).length > 0;
+  }
+
+  private getErrorMessage(error: HttpErrorResponse, taskId: string): string {
+    if (error.status === 404) {
+      return `Task not found (ID: ${taskId}). It may have been deleted.`;
+    }
+    if (error.status === 403) {
+      return 'You do not have permission to update this task.';
+    }
+    if (error.status === 400) {
+      return 'Invalid request data. Please check your input.';
+    }
+    if (error.error?.message) {
+      return error.error.message;
+    }
+    return `Failed to update task ${taskId}. Please try again.`;
+  }
+  /**
+   * Delete a task by ID with enhanced error handling
+   * @param taskId The ID of the task to be deleted
+   * @param showConfirmation Whether to show a confirmation dialog before deleting
+   * @returns An Observable containing the delete operation response
+   * @throws Error if taskId is empty or invalid
+   */
+  deleteTask(taskId: string, showConfirmation: boolean = true): Observable<{ success: boolean, message: string }> {
+    if (!taskId) {
+      console.error('Delete task failed: Task ID is required');
+      return throwError(() => new Error('Task ID is required for deletion'));
+    }
+
+    // URL construction with proper path
+    const url = `${this.baseUrl}/delete-task/${taskId}`;
+
+    console.log(`Attempting to delete task with ID: ${taskId}`);
+
+    return this.http.delete<{ success: boolean, message: string }>(url).pipe(
+      tap(response => {
+        console.log('Task deleted successfully:', response);
+      }),
+      catchError((error: HttpErrorResponse) => {
+        console.error(`Failed to delete task ${taskId}:`, error);
+
+        let errorMessage = 'Failed to delete task';
+
+        if (error.status === 404) {
+          errorMessage = 'Task not found. It may have been already deleted.';
+        } else if (error.status === 403) {
+          errorMessage = 'You do not have permission to delete this task.';
+        } else if (error.error?.message) {
+          errorMessage = error.error.message;
+        }
+
+        return throwError(() => new Error(errorMessage));
+      })
+    );
+  }
+
+  /**
+   * Get a task by ID
+   * @param taskId The ID of the task to be retrieved
+   * @returns An Observable containing the retrieved task
+   */
+  getTaskById(taskId: string): Observable<{ task: Task }> {
+    return this.http.get<{ task: Task }>(`${this.baseUrl}/${taskId}`);
+  }
+
+  /**
+   * Get all available users
+   * @returns An Observable containing the list of users
+   */
+  // getAllUsers(): Observable<any> {
+  //   return this.http.get<any>(`${environment.baseApi.replace('/tasks', '/users')}/all-users`);
+  // }
+
+  /**
+   * Get all available task statuses
+   * @returns An Observable containing the list of task statuses
+   */
+  // getTaskStatuses(): Observable<any> {
+  //   return this.http.get<any>(`${this.baseUrl}/statuses`);
+  // }
 
   /**
    * Format a date to YYYY-MM-DD format

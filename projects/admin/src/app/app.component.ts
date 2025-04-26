@@ -30,9 +30,9 @@ export class AppComponent implements OnInit {
     });
   }
 
-  logout() {
+    logout() {
     this.spinner.show();
-    this.loginService.logout();
+      this.loginService.logout();
     this.spinner.hide();
-  }
+    }
 }

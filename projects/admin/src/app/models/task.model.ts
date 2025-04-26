@@ -1,7 +1,8 @@
 export interface Task {
   title: string;
   deadline: string;
-  id?: number;
+  id?: string | undefined;
+  _id?: string | undefined;
   name?: string;
   description?: string;
   completed?: boolean;

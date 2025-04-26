@@ -12,6 +12,7 @@ import { JQueryService } from './services/jquery.service';
 import { ToastrModule } from 'ngx-toastr';
 import { NgxSpinnerModule } from 'ngx-spinner';
 import { httpInterceptorProviders } from './interceptors';
+import { MatDialogModule } from '@angular/material/dialog';
 
 @NgModule({
   declarations: [
@@ -24,7 +25,7 @@ import { httpInterceptorProviders } from './interceptors';
     ReactiveFormsModule,
     HttpClientModule,
     AppRoutingModule,
-
+    MatDialogModule,
     BrowserAnimationsModule,
     NgxSpinnerModule,
     ToastrModule.forRoot({

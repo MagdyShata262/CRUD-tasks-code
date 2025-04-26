@@ -1,93 +1,220 @@
 <div class="mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex align-items-center">
+      <h2 class="mb-0 mr-3">Task Management</h2>
+      <div class="controls ml-3">
+        <button mat-icon-button matTooltip="Refresh data" (click)="manualRefresh()">
+          <mat-icon>refresh</mat-icon>
+        </button>
+        <button mat-icon-button [matTooltip]="autoRefreshEnabled ? 'Disable auto-refresh' : 'Enable auto-refresh'"
+          (click)="toggleAutoRefresh()" [color]="autoRefreshEnabled ? 'accent' : ''">
+          <mat-icon>autorenew</mat-icon>
+        </button>
+        <button mat-icon-button [matTooltip]="viewMode === 'list' ? 'Switch to grid view' : 'Switch to list view'"
+          (click)="toggleViewMode()">
+          <mat-icon>{{ viewMode === 'list' ? 'grid_view' : 'view_list' }}</mat-icon>
+        </button>
+      </div>
+    </div>
+    <button class="addTask" mat-raised-button (click)="addTask()">Add Task</button>
+  </div>
 
-    <div class="d-flex justify-content-end">
-        <button class="addTask" mat-raised-button (click)="addTask()" >Add Task</button>
+  <form [formGroup]="tasksFilter">
+    <div class="row mt-3">
+      <div class="col-md-3">
+        <mat-form-field appearance="outline" class="w-100">
+          <mat-label>Search</mat-label>
+          <input matInput placeholder="title search" formControlName="title">
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+      </div>
+      <div class="col-md-3">
+        <mat-form-field appearance="outline" class="w-100">
+          <mat-label>By User</mat-label>
+          <mat-select formControlName="userId">
+            <mat-option>All Users</mat-option>
+            <mat-option *ngFor="let user of users" [value]="user.id">
+              {{user.username}}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="col-md-3">
+        <mat-form-field appearance="outline" class="w-100">
+          <mat-label>Status</mat-label>
+          <mat-select formControlName="status">
+            <mat-option>All Statuses</mat-option>
+            <mat-option *ngFor="let item of status" [value]="item.id || item.name">
+              {{item.name}}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="col-md-3">
+        <mat-form-field appearance="outline" class="w-100">
+          <mat-label>Enter a date range</mat-label>
+          <mat-date-range-input [rangePicker]="picker">
+            <input matStartDate placeholder="Start date" formControlName="fromDate">
+            <input matEndDate placeholder="End date" formControlName="toDate">
+          </mat-date-range-input>
+          <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+          <mat-date-range-picker #picker></mat-date-range-picker>
+        </mat-form-field>
+      </div>
+    </div>
+    <div class="d-flex justify-content-end mb-3">
+      <button mat-button color="warn" (click)="resetFilters()">Reset Filters</button>
+    </div>
+  </form>
+
+  <ngx-spinner type="ball-scale-multiple"></ngx-spinner>
+
+  <!-- List View -->
+  <div class="listBox" *ngIf="viewMode === 'list'">
+    <div class="loading-shade" *ngIf="isLoading">
+      <mat-spinner diameter="50"></mat-spinner>
     </div>
 
-    <form >
-        <div class="row mt-3">
-                <div class="col-md-3">
-                    <mat-form-field appearance="outline" class="w-100">
-                        <mat-label>Search</mat-label>
-                        <input matInput  placeholder="title search">
-                    </mat-form-field>
-                </div>
-                <div class="col-md-3">
+    <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z8 w-100 mt-2">
+      <!-- Position Column -->
+      <ng-container matColumnDef="position">
+        <th mat-header-cell *matHeaderCellDef> No. </th>
+        <td mat-cell *matCellDef="let element;let index = index"> {{index + 1}} </td>
+      </ng-container>
 
-                    <mat-form-field appearance="outline" class="w-100">
-                        <mat-label>By User</mat-label>
-                        <mat-select >
-                            <mat-option *ngFor="let user of users" [value]="user?.id">
-                              {{user?.name}}
-                            </mat-option>
-                          </mat-select>
-                    </mat-form-field>
-                </div>
-                <div class="col-md-3">
-                    <mat-form-field appearance="outline" class="w-100">
-                        <mat-label>Status</mat-label>
-                        <mat-select>
-                            <mat-option *ngFor="let item of status" [value]="item?.id">
-                              {{item?.name}}
-                            </mat-option>
-                          </mat-select>
-                    </mat-form-field>
-                </div>
-                <div class="col-md-3">
-                    <mat-form-field appearance="outline" class="w-100">
-                        <mat-label>Enter a date range</mat-label>
-                        <mat-date-range-input [rangePicker]="picker">
-                          <input matStartDate placeholder="Start date">
-                          <input matEndDate placeholder="End date">
-                        </mat-date-range-input>
-                        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-                        <mat-date-range-picker #picker></mat-date-range-picker>
-                    </mat-form-field>
-                </div>
-        </div>
-    </form>
-    <div class="listBox">
-        <table mat-table [dataSource]="dataSource" class="mat-elevation-z8  w-100 mt-2">
+      <!-- Image Column -->
+      <ng-container matColumnDef="image">
+        <th mat-header-cell *matHeaderCellDef> Image </th>
+        <td mat-cell *matCellDef="let element">
+          <img [src]="getImageUrl(element.image)" alt="Task image" class="task-thumbnail" width="50" height="50">
+        </td>
+      </ng-container>
 
-            <!-- Position Column -->
-            <ng-container matColumnDef="position">
-              <th mat-header-cell *matHeaderCellDef> No. </th>
-              <td mat-cell *matCellDef="let element;let index = index"> {{index + 1}} </td>
-            </ng-container>
+      <!-- Name Column -->
+      <ng-container matColumnDef="title">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header> Title </th>
+        <td mat-cell *matCellDef="let element">
+          <div class="d-flex flex-column">
+            <span class="task-title">{{element.title}}</span>
+            <small class="text-muted" *ngIf="element.description">
+              {{element.description.substring(0, 50)}}{{element.description.length > 50 ? '...' : ''}}
+            </small>
+          </div>
+        </td>
+      </ng-container>
 
-            <!-- Name Column -->
-            <ng-container matColumnDef="title">
-              <th mat-header-cell *matHeaderCellDef> Title </th>
-              <td mat-cell *matCellDef="let element"> {{element.title}} </td>
-            </ng-container>
+      <!-- User Column -->
+      <ng-container matColumnDef="user">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header> User </th>
+        <td mat-cell *matCellDef="let element">
+          <span class="user-badge">
+            {{element.userId?.username}}
+          </span>
+        </td>
+      </ng-container>
 
-            <!-- Weight Column -->
-            <ng-container matColumnDef="user">
-              <th mat-header-cell *matHeaderCellDef> User </th>
-              <td mat-cell *matCellDef="let element"> {{element.user}} </td>
-            </ng-container>
+      <!-- Deadline Column -->
+      <ng-container matColumnDef="deadLineDate">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header> DeadLine Date </th>
+        <td mat-cell *matCellDef="let element">
+          <div class="d-flex flex-column">
+            <span>{{element.deadline | date:'dd/MM/yyyy'}}</span>
+            <small class="text-muted">{{element.createdAt | date:'dd/MM/yyyy'}}</small>
+          </div>
+        </td>
+      </ng-container>
 
-            <!-- Symbol Column -->
-            <ng-container matColumnDef="deadLineDate">
-                <th mat-header-cell *matHeaderCellDef> DeadLine Date </th>
-                <td mat-cell *matCellDef="let element"> {{element.deadLineDate}} </td>
-              </ng-container>
-            <ng-container matColumnDef="status">
-                <th mat-header-cell *matHeaderCellDef> Status </th>
-                <td mat-cell *matCellDef="let element"> {{element.status}} </td>
-              </ng-container>
+      <!-- Status Column -->
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header> Status </th>
+        <td mat-cell *matCellDef="let element">
+          <span class="status-badge" [ngClass]="{
+                        'status-complete': element.status === 'Complete',
+                        'status-in-progress': element.status === 'In-Progress'
+                    }">
+            {{element.status}}
+          </span>
+        </td>
+      </ng-container>
 
-            <ng-container matColumnDef="actions" >
-                <th mat-header-cell *matHeaderCellDef class="w-20">  </th>
-                <td mat-cell *matCellDef="let element">
-                    <button class="btn btn-warning" mat-raised-button>Update</button>
-                    <button  mat-raised-button color="warn">Delete</button>
-                </td>
-              </ng-container>
+      <!-- Actions Column -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef class="w-20"> </th>
+        <td mat-cell *matCellDef="let element">
+          <button class="btn btn-warning mr-2" mat-raised-button (click)="updateTask(element)">
+            <mat-icon>edit</mat-icon> Update
+          </button>
+          <button mat-raised-button color="warn" (click)="deleteTask(element._id)">
+            <mat-icon>delete</mat-icon> Delete
+          </button>
+        </td>
+      </ng-container>
 
-            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-          </table>
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
 
+      <!-- Row shown when there is no matching data -->
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell text-center" colspan="6">No data matching the filters</td>
+      </tr>
+    </table>
+
+    <mat-paginator [length]="totalItems" [pageSize]="pageSize" [pageSizeOptions]="pageSizeOptions"
+      [showFirstLastButtons]="true" (page)="onPageChange($event)">
+    </mat-paginator>
+  </div>
+
+  <!-- Grid View -->
+  <div class="grid-container" *ngIf="viewMode === 'grid'">
+    <div class="loading-shade" *ngIf="isLoading">
+      <mat-spinner diameter="50"></mat-spinner>
     </div>
+
+    <div class="row">
+      <div class="col-md-4 col-sm-6 mb-4" *ngFor="let task of dataSource.data">
+        <mat-card class="task-card">
+          <mat-card-header>
+            <div mat-card-avatar>
+              <img [src]="getImageUrl(task.image)" alt="Task image" class="task-avatar">
+            </div>
+            <mat-card-title>{{task.title}}</mat-card-title>
+            <mat-card-subtitle>
+              <span class="status-badge" [ngClass]="{
+                                'status-complete': task.status === 'Complete',
+                                'status-in-progress': task.status === 'In-Progress'
+                            }">{{task.status}}</span>
+            </mat-card-subtitle>
+          </mat-card-header>
+          <img mat-card-image [src]="getImageUrl(task.image)" alt="Task image" class="card-img">
+          <mat-card-content>
+            <p>{{task.description?.substring(0, 100)}}{{task.description?.length > 100 ? '...' : ''}}</p>
+            <div class="d-flex justify-content-between">
+              <small>Deadline: {{task.deadline | date:'dd/MM/yyyy'}}</small>
+              <small>User: {{task.userId?.username}}</small>
+            </div>
+          </mat-card-content>
+          <mat-card-actions>
+            <button mat-button color="primary"   *ngIf="task.id"   (click)="updateTask(task)">
+              <mat-icon>edit</mat-icon> EDIT
+            </button>
+            <button mat-button color="warn" (click)="deleteTask(task._id)">
+              <mat-icon>delete</mat-icon> DELETE
+            </button>
+          </mat-card-actions>
+        </mat-card>
+      </div>
+
+      <!-- Empty state -->
+      <div class="col-12 text-center py-5" *ngIf="dataSource.data.length === 0 && !isLoading">
+        <mat-icon class="empty-icon">assignment</mat-icon>
+        <h3>No tasks found</h3>
+        <p>Try changing your search filters or add a new task.</p>
+        <button mat-raised-button color="primary" (click)="addTask()">Add Task</button>
+      </div>
+    </div>
+
+    <mat-paginator [length]="totalItems" [pageSize]="pageSize" [pageSizeOptions]="pageSizeOptions"
+      [showFirstLastButtons]="true" (page)="onPageChange($event)">
+    </mat-paginator>
+  </div>
 </div>

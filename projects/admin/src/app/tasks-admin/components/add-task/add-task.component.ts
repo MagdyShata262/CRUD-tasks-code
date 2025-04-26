@@ -1,8 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { TaskCreate } from '../../../models/task.model';
-import { TasksService, TaskCreateResponse } from '../../services/tasks.service';
+import { TaskCreate, TaskResponse } from '../../../models/task.model';
+import { TasksService } from '../../services/tasks.service';
 import { ToastrService } from 'ngx-toastr';
 import { NgxSpinnerService } from 'ngx-spinner';
 import { finalize, Subject, takeUntil } from 'rxjs';
@@ -89,24 +89,38 @@ export class AddTaskComponent implements OnInit, OnDestroy {
     if (this.newTaskForm.valid) {
       this.isSubmitting = true;
 
-      // Create task data from form
-      const taskData: TaskCreate = {
-        title: this.newTaskForm.get('title')?.value,
-        description: this.newTaskForm.get('description')?.value,
-        deadline: this.formatDate(this.newTaskForm.get('deadline')?.value),
-        userId: this.newTaskForm.get('userId')?.value,
-      };
+      // Create FormData directly in the component
+      const formData = new FormData();
+
+      // Add form fields to FormData
+      formData.append('title', this.newTaskForm.get('title')?.value);
+      formData.append('description', this.newTaskForm.get('description')?.value);
+
+      // Format and append the deadline
+      const deadlineValue = this.formatDate(this.newTaskForm.get('deadline')?.value);
+      formData.append('deadline', deadlineValue);
+
+      // Append the userId
+      const userId = this.newTaskForm.get('userId')?.value;
+      formData.append('userId', userId ? userId.toString() : '');
 
       // Add image if selected
       if (this.selectedFile) {
-        taskData.image = this.selectedFile;
+        formData.append('image', this.selectedFile, this.selectedFile.name);
+        console.log('Appending file:', this.selectedFile.name, this.selectedFile.type, this.selectedFile.size);
+      }
+
+      // Log the form data for debugging
+      console.log('Form data contents:');
+      for (const pair of (formData as any).entries()) {
+        console.log(pair[0] + ': ' + (pair[0] === 'image' ? 'File: ' + pair[1].name : pair[1]));
       }
 
       // Show loading spinner
       this.spinner.show();
 
-      // Subscribe to create task service
-      this.tasksService.createTask(taskData)
+      // Call task service with FormData
+      this.tasksService.createTask(formData)
         .pipe(
           takeUntil(this.destroy$),
           finalize(() => {
@@ -115,11 +129,11 @@ export class AddTaskComponent implements OnInit, OnDestroy {
           })
         )
         .subscribe({
-          next: (response: TaskCreateResponse) => {
-            this.toastr.success(response.message || 'Task created successfully');
+          next: (response: TaskResponse) => {
+            this.toastr.success('Task created successfully');
             this.dialog.close(response);
           },
-          error: (error) => {
+          error: (error: Error) => {
             console.error('Error creating task:', error);
             this.toastr.error(error.message || 'Failed to create task');
           }

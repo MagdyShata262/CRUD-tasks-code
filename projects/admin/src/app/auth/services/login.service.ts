@@ -3,6 +3,7 @@ import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { catchError, map, tap } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 
 export interface LoginRequest {
   email: string;
@@ -25,7 +26,7 @@ export interface AuthResponse {
   providedIn: 'root'
 })
 export class LoginService {
-  private apiUrl = 'http://localhost:8080/auth/login'; // API endpoint
+  private apiUrl = environment.baseApi.replace('/tasks', '/auth') + '/login'; // API endpoint using environment
   // private currentUserSubject = new BehaviorSubject<any>(this.getUserFromLocalStorage());
   // public currentUser = this.currentUserSubject.asObservable();
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(this.hasToken());
@@ -61,7 +62,7 @@ export class LoginService {
   logout(): void {
     // Clear stored data
     localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    // localStorage.removeItem('user');
 
     // Update authentication state
     // this.currentUserSubject.next(null);
@@ -104,8 +105,8 @@ export class LoginService {
     const tokenExists = this.hasToken();
     this.isAuthenticatedSubject.next(tokenExists);
 
-      // if (!tokenExists) {
-      //   this.currentUserSubject.next(null);
-      // }
+    // if (!tokenExists) {
+    //   this.currentUserSubject.next(null);
+    // }
   }
 }
